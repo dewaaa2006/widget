@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  
+
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class HomePage extends StatelessWidget {
           children: [
             // HEADER
             Container(
-              height: 60,
+              height: 50,
               width: double.infinity,
               color: Colors.grey[400],
               padding: const EdgeInsets.symmetric(horizontal: 16),
