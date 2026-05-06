@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
+import '../services/app_state.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -32,7 +33,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward().then((_) {
       Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
+        if (!mounted) return;
+        if (AppState.isLoggedIn) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        } else if (AppState.hasSeenOnboarding) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        } else {
           Navigator.of(context).pushReplacementNamed('/onboarding');
         }
       });
@@ -66,8 +72,8 @@ class _SplashScreenState extends State<SplashScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.primary.withOpacity(0.1),
-                      AppColors.primaryGradient.withOpacity(0.05),
+                      AppColors.primary.withAlphaValue(0.1),
+                      AppColors.primaryGradient.withAlphaValue(0.05),
                     ],
                   ),
                 ),
@@ -88,8 +94,8 @@ class _SplashScreenState extends State<SplashScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.accentOrange.withOpacity(0.08),
-                      AppColors.accentOrangeBright.withOpacity(0.05),
+                      AppColors.accentOrange.withAlphaValue(0.08),
+                      AppColors.accentOrangeBright.withAlphaValue(0.05),
                     ],
                   ),
                 ),
@@ -120,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen>
                         borderRadius: BorderRadius.circular(40),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.4),
+                            color: AppColors.primary.withAlphaValue(0.4),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           ),
@@ -205,7 +211,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primary.withOpacity(0.5),
+                      AppColors.primary.withAlphaValue(0.5),
                     ),
                   ),
                 ),

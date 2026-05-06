@@ -41,7 +41,6 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.accentOrange,
         surface: AppColors.surfaceCard,
-        background: AppColors.background,
         error: AppColors.errorRed,
       ),
       appBarTheme: AppBarTheme(
@@ -231,6 +230,15 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      }),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: const TextStyle(color: Colors.white),
+      ),
     );
   }
 }
@@ -273,4 +281,10 @@ class AppShadows {
       offset: Offset(0, 2),
     ),
   ];
+}
+
+extension ColorAlphaExtension on Color {
+  Color withAlphaValue(double opacity) {
+    return withValues(alpha: opacity);
+  }
 }

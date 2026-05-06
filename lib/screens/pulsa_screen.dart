@@ -1,467 +1,376 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+
+import '../config/app_helpers.dart';
 import '../config/theme.dart';
-import '../config/constants.dart';
 import '../models/models.dart';
 import '../widgets/custom_widgets.dart';
 
 class PulsaScreen extends StatefulWidget {
-  const PulsaScreen({Key? key}) : super(key: key);
+  const PulsaScreen({super.key});
 
   @override
   State<PulsaScreen> createState() => _PulsaScreenState();
 }
 
-class _PulsaScreenState extends State<PulsaScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  final _phoneController = TextEditingController();
-  Operator? _selectedOperator;
-  PulsaProduct? _selectedProduct;
+class _PulsaScreenState extends State<PulsaScreen> {
+  final TextEditingController _phoneController =
+      TextEditingController(text: FavoriteRepository.favorites.first.phone);
+  Operator? _operator;
+  PulsaProduct? _selected;
+  bool _loadingPrice = false;
 
-  final List<PulsaProduct> _pulsaProducts = [
-    PulsaProduct(
-      id: '1',
-      nominal: 10000,
-      price: 10000,
-      originalPrice: 10000,
-      discount: 0,
-    ),
-    PulsaProduct(
-      id: '2',
-      nominal: 25000,
-      price: 23750,
-      originalPrice: 25000,
-      discount: 5,
-      isPromo: true,
-      promoLabel: '-5%',
-    ),
-    PulsaProduct(
-      id: '3',
-      nominal: 50000,
-      price: 47500,
-      originalPrice: 50000,
-      discount: 5,
-      isPromo: true,
-      promoLabel: '-5%',
-    ),
-    PulsaProduct(
-      id: '4',
-      nominal: 100000,
-      price: 95000,
-      originalPrice: 100000,
-      discount: 5,
-      isPromo: true,
-      promoLabel: '-5%',
-    ),
+  final List<PulsaProduct> _products = [
+    PulsaProduct(id: 'p5', nominal: 5000, price: 6500, originalPrice: 7000, discount: 500),
+    PulsaProduct(id: 'p10', nominal: 10000, price: 11500, originalPrice: 12000, discount: 500),
+    PulsaProduct(id: 'p15', nominal: 15000, price: 16500, originalPrice: 18000, discount: 1500, isPromo: true, promoLabel: 'Promo'),
+    PulsaProduct(id: 'p20', nominal: 20000, price: 21800, originalPrice: 23000, discount: 1200),
+    PulsaProduct(id: 'p25', nominal: 25000, price: 26750, originalPrice: 28000, discount: 1250, isPromo: true, promoLabel: 'Best deal'),
+    PulsaProduct(id: 'p50', nominal: 50000, price: 52200, originalPrice: 54500, discount: 2300, isPromo: true, promoLabel: 'Hemat'),
+    PulsaProduct(id: 'p100', nominal: 100000, price: 103500, originalPrice: 107000, discount: 3500, isPromo: true, promoLabel: 'Top pick'),
   ];
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: AppAnimations.normal,
-      vsync: this,
-    );
-    _animationController.forward();
+    _detect();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  void _detectOperator() {
-    final phone = _phoneController.text;
-    if (phone.isEmpty) return;
+  void _detect() {
+    setState(() {
+      _operator = detectOperator(_phoneController.text);
+      _loadingPrice = true;
+    });
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _loadingPrice = false);
+    });
+  }
 
-    Operator? detected;
-    if (phone.startsWith('0811') || phone.startsWith('0812') || phone.startsWith('0813') || phone.startsWith('0821') || phone.startsWith('0822') || phone.startsWith('0823')) {
-      detected = Operator.telkomsel;
-    } else if (phone.startsWith('0817') || phone.startsWith('0818') || phone.startsWith('0819') || phone.startsWith('0859') || phone.startsWith('0877') || phone.startsWith('0878')) {
-      detected = Operator.xl;
-    } else if (phone.startsWith('0814') || phone.startsWith('0815') || phone.startsWith('0816') || phone.startsWith('0855') || phone.startsWith('0856') || phone.startsWith('0857')) {
-      detected = Operator.indosat;
-    } else if (phone.startsWith('0892') || phone.startsWith('0893') || phone.startsWith('0899')) {
-      detected = Operator.tri;
-    } else if (phone.startsWith('0881') || phone.startsWith('0882') || phone.startsWith('0883') || phone.startsWith('0888') || phone.startsWith('0889')) {
-      detected = Operator.smartfren;
-    }
+  void _addToCart() {
+    if (_selected == null || _operator == null) return;
+    CartRepository.addItem(
+      CartItem(
+        id: 'cart-pulsa-${DateTime.now().millisecondsSinceEpoch}',
+        type: TransactionType.pulsa,
+        product: _selected!,
+        displayName: 'Pulsa ${formatCurrency(_selected!.nominal)}',
+        targetNumber: _phoneController.text,
+        operator: _operator,
+        price: _selected!.price,
+        addedAt: DateTime.now(),
+      ),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pulsa ditambahkan ke keranjang')),
+    );
+    setState(() {});
+  }
 
-    if (detected != null) {
-      setState(() {
-        _selectedOperator = detected;
-      });
-    }
+  void _buyNow() {
+    if (_selected == null || _operator == null) return;
+    Navigator.pushNamed(
+      context,
+      '/checkout',
+      arguments: {
+        'product': _selected,
+        'operator': _operator,
+        'phone': _phoneController.text,
+        'type': 'pulsa',
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final valid = _phoneController.text.length >= 10 && _operator != null;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Beli Pulsa'),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.pushNamed(context, '/favorites'),
+            icon: const Icon(Iconsax.heart),
+          ),
+        ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 140),
+        children: [
+          PremiumCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Phone input section
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(-0.3, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: const Interval(0, 0.4),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Nomor Tujuan',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                Text(
+                  'Nomor tujuan',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
-                      const SizedBox(height: AppSpacing.sm),
-                      TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        onChanged: (_) {
-                          _detectOperator();
-                        },
-                        decoration: InputDecoration(
-                          hintText: '08123456789',
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Icon(
-                              Iconsax.mobile,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  onChanged: (_) => _detect(),
+                  decoration: const InputDecoration(
+                    hintText: '0812xxxxxxx',
+                    prefixIcon: Icon(Iconsax.mobile),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                // Operator selection (auto-detected)
-                if (_selectedOperator != null)
-                  FadeTransition(
-                    opacity: Tween<double>(begin: 0, end: 1).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: const Interval(0.2, 0.6),
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLow,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Iconsax.mobile,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Operator Terdeteksi',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _getOperatorName(_selectedOperator!),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Iconsax.tick_square,
-                            color: AppColors.successGreen,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (_selectedOperator != null)
-                  const SizedBox(height: AppSpacing.lg),
-                // Nominal selection
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pilih Nominal',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: AppSpacing.md,
-                        mainAxisSpacing: AppSpacing.md,
-                        childAspectRatio: 1.5,
-                      ),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _pulsaProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = _pulsaProducts[index];
-                        final isSelected = _selectedProduct?.id == product.id;
-
-                        return ScaleTransition(
-                          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Interval(
-                                0.3 + (index * 0.08),
-                                0.7 + (index * 0.08),
-                              ),
-                            ),
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedProduct = product;
-                              });
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.surfaceCard,
-                                borderRadius: BorderRadius.circular(AppRadius.lg),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.border,
-                                  width: isSelected ? 2 : 1,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: AppColors.primary
-                                              .withOpacity(0.3),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    children: [
-                                      Text(
-                                        'Rp${product.nominal.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : AppColors.textPrimary,
-                                            ),
-                                      ),
-                                      if (product.isPromo) ...[
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          product.promoLabel,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : AppColors.accentOrangeBright,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  Text(
-                                    'Rp${product.price.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: isSelected
-                                              ? Colors.white.withOpacity(0.9)
-                                              : AppColors.textSecondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: FavoriteRepository.favorites.take(3).map((favorite) {
+                    return ActionChip(
+                      onPressed: () {
+                        _phoneController.text = favorite.phone;
+                        _detect();
                       },
-                    ),
-                  ],
+                      label: Text(favorite.name),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                // Summary section
-                if (_selectedProduct != null && _selectedOperator != null)
-                  SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.3),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: const Interval(0.5, 0.9),
+                const SizedBox(height: 12),
+                if (_operator != null)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: getOperatorColor(_operator!).withAlphaValue(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Iconsax.flash_1, color: getOperatorColor(_operator!)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Operator terdeteksi: ${getOperatorName(_operator!)}',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                        const Icon(Iconsax.tick_circle, color: AppColors.successGreen),
+                      ],
+                    ),
+                  )
+                else
+                  Text(
+                    'Masukkan nomor valid untuk mendeteksi operator otomatis.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SectionHeader(
+            title: 'Nominal cepat',
+            action: 'Riwayat nomor',
+            onTap: () => Navigator.pushNamed(context, '/history'),
+          ),
+          const SizedBox(height: 12),
+          if (_loadingPrice)
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: List.generate(
+                6,
+                (_) => const SizedBox(
+                  width: 160,
+                  child: ShimmerSkeleton(height: 88, borderRadius: 24),
+                ),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: _products.map((product) {
+                final selected = _selected?.id == product.id;
+                return GestureDetector(
+                  onTap: valid
+                      ? () => setState(() => _selected = product)
+                      : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 240),
+                    width: (MediaQuery.of(context).size.width - 48) / 2,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primary.withAlphaValue(0.08)
+                          : AppColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: selected ? AppColors.primary : AppColors.border,
+                        width: selected ? 1.6 : 1,
                       ),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        PremiumCard(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Nominal',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
+                        if (product.isPromo)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF2E5),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              product.promoLabel,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: AppColors.accentOrange,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  Text(
-                                    'Rp${_selectedProduct!.nominal.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Divider(
-                                color: AppColors.border.withOpacity(0.5),
-                                height: 1,
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Total Bayar',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                  Text(
-                                    'Rp${_selectedProduct!.price.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall
-                                        ?.copyWith(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
+                        const SizedBox(height: 10),
+                        Text(
+                          formatCurrency(product.nominal),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        // CTA Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: PremiumButton(
-                            label: 'Lanjutkan ke Pembayaran',
-                            icon: Iconsax.arrow_right_3,
-                            onPressed: () {
-                              Navigator.of(context).pushNamed(
-                                '/checkout',
-                                arguments: {
-                                  'product': _selectedProduct,
-                                  'operator': _selectedOperator,
-                                  'phone': _phoneController.text,
-                                  'type': 'pulsa',
-                                },
-                              );
-                            },
-                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          formatCurrency(product.originalPrice),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          formatCurrency(product.price),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                              ),
                         ),
                       ],
                     ),
                   ),
-              ],
+                );
+              }).toList(),
             ),
+          if (_selected != null) ...[
+            const SizedBox(height: 18),
+            PremiumCard(
+              child: Column(
+                children: [
+                  _SummaryLine(label: 'Harga promo', value: formatCurrency(_selected!.price)),
+                  _SummaryLine(label: 'Biaya admin', value: 'Gratis'),
+                  _SummaryLine(
+                    label: 'Estimasi diterima',
+                    value: formatCurrency(_selected!.nominal),
+                  ),
+                  _SummaryLine(label: 'Voucher aktif', value: 'Cashback 10%'),
+                  const Divider(height: 22),
+                  _SummaryLine(
+                    label: 'Total bayar',
+                    value: formatCurrency(_selected!.price),
+                    emphasize: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: valid && _selected != null ? _addToCart : null,
+                  child: const Text('Masukkan ke Keranjang'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: PremiumButton(
+                  label: 'Beli Sekarang',
+                  onPressed: valid && _selected != null ? _buyNow : null,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
 
-  String _getOperatorName(Operator operator) {
-    switch (operator) {
-      case Operator.telkomsel:
-        return 'Telkomsel';
-      case Operator.xl:
-        return 'XL Axiata';
-      case Operator.indosat:
-        return 'Indosat';
-      case Operator.tri:
-        return 'Tri (3)';
-      case Operator.smartfren:
-        return 'Smartfren';
-    }
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.action,
+    required this.onTap,
+  });
+
+  final String title;
+  final String action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ),
+        TextButton(onPressed: onTap, child: Text(action)),
+      ],
+    );
+  }
+}
+
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = emphasize
+        ? Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            )
+        : Theme.of(context).textTheme.bodyMedium;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Text(label, style: style),
+          const Spacer(),
+          Text(value, style: style),
+        ],
+      ),
+    );
   }
 }

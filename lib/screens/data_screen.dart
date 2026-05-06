@@ -1,533 +1,322 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+
+import '../config/app_helpers.dart';
 import '../config/theme.dart';
-import '../config/constants.dart';
 import '../models/models.dart';
 import '../widgets/custom_widgets.dart';
 
 class DataScreen extends StatefulWidget {
-  const DataScreen({Key? key}) : super(key: key);
+  const DataScreen({super.key});
 
   @override
   State<DataScreen> createState() => _DataScreenState();
 }
 
-class _DataScreenState extends State<DataScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  final _phoneController = TextEditingController();
-  Operator? _selectedOperator;
-  DataPackage? _selectedPackage;
-  String _selectedCategory = 'internet';
+class _DataScreenState extends State<DataScreen> {
+  final TextEditingController _phoneController = TextEditingController();
+  Operator? _operator;
+  String _category = 'internet';
+  String _sort = 'populer';
+  DataPackage? _selected;
 
   final Map<String, List<DataPackage>> _packages = {
     'internet': [
-      DataPackage(
-        id: '1',
-        name: 'Internet 5GB',
-        category: 'internet',
-        quota: '5GB',
-        validityDays: '30 Hari',
-        price: 49000,
-        originalPrice: 49000,
-        discount: 0,
-        benefits: ['Internet 5GB', 'Akses tanpa batas ke beberapa sosmed'],
-      ),
-      DataPackage(
-        id: '2',
-        name: 'Internet 10GB',
-        category: 'internet',
-        quota: '10GB',
-        validityDays: '30 Hari',
-        price: 89000,
-        originalPrice: 99000,
-        discount: 10,
-        isPromo: true,
-        benefits: ['Internet 10GB', 'Akses tanpa batas ke beberapa sosmed'],
-      ),
+      DataPackage(id: 'd1', name: 'Internet 2GB', category: 'internet', quota: '2GB', validityDays: '3 hari', price: 12000, originalPrice: 14000, discount: 2000, isPromo: true, benefits: ['Kuota utama 2GB', 'Aktif instan']),
+      DataPackage(id: 'd2', name: 'Internet 5GB', category: 'internet', quota: '5GB', validityDays: '7 hari', price: 24500, originalPrice: 27000, discount: 2500, benefits: ['Kuota utama 5GB', 'Akses nasional']),
+      DataPackage(id: 'd3', name: 'Internet 12GB', category: 'internet', quota: '12GB', validityDays: '30 hari', price: 67000, originalPrice: 72000, discount: 5000, isPromo: true, benefits: ['Kuota utama 12GB', 'Bonus 2GB lokal']),
     ],
     'combo': [
-      DataPackage(
-        id: '3',
-        name: 'Combo Paket',
-        category: 'combo',
-        quota: '15GB Data + 100min Call',
-        validityDays: '30 Hari',
-        price: 129000,
-        originalPrice: 139000,
-        discount: 7,
-        isPromo: true,
-        benefits: [
-          '15GB Internet',
-          '100 Menit Panggilan',
-          'Gratis akses sosmed',
-        ],
-      ),
+      DataPackage(id: 'd4', name: 'Combo 25GB', category: 'combo', quota: '25GB', validityDays: '30 hari', price: 93000, originalPrice: 109000, discount: 16000, isPromo: true, benefits: ['25GB utama', 'Bonus nelpon', 'Apps unlimited']),
+      DataPackage(id: 'd5', name: 'Combo 40GB', category: 'combo', quota: '40GB', validityDays: '30 hari', price: 138000, originalPrice: 149000, discount: 11000, benefits: ['40GB utama', 'Bonus SMS']),
     ],
     'malam': [
-      DataPackage(
-        id: '4',
-        name: 'Internet Malam 20GB',
-        category: 'malam',
-        quota: '20GB (22:00-06:00)',
-        validityDays: '30 Hari',
-        price: 39000,
-        originalPrice: 39000,
-        discount: 0,
-        benefits: ['20GB Internet Malam', 'Jam operasional 22:00-06:00'],
-      ),
+      DataPackage(id: 'd6', name: 'Malam 15GB', category: 'malam', quota: '15GB', validityDays: '30 hari', price: 24000, originalPrice: 26000, discount: 2000, benefits: ['22:00-06:00', 'Cocok streaming malam']),
     ],
     'streaming': [
-      DataPackage(
-        id: '5',
-        name: 'Paket Streaming',
-        category: 'streaming',
-        quota: '25GB Kuota Streaming',
-        validityDays: '30 Hari',
-        price: 99000,
-        originalPrice: 129000,
-        discount: 23,
-        isPromo: true,
-        benefits: [
-          '25GB untuk YouTube, Netflix, TikTok',
-          'Unlimited Spotify',
-          'Streaming tanpa khawatir',
-        ],
-      ),
+      DataPackage(id: 'd7', name: 'Streaming Max', category: 'streaming', quota: '10GB', validityDays: '30 hari', price: 48000, originalPrice: 56000, discount: 8000, isPromo: true, benefits: ['Netflix & YouTube', 'Bonus VIU']),
+    ],
+    'gaming': [
+      DataPackage(id: 'd8', name: 'Gaming Booster', category: 'gaming', quota: '8GB', validityDays: '14 hari', price: 32000, originalPrice: 35000, discount: 3000, benefits: ['Free Fire', 'Mobile Legends', 'PUBG Mobile']),
+    ],
+    'masa': [
+      DataPackage(id: 'd9', name: 'Perpanjang 30 Hari', category: 'masa', quota: '0GB', validityDays: '30 hari', price: 15000, originalPrice: 17000, discount: 2000, benefits: ['Tambah masa aktif 30 hari']),
     ],
   };
 
   @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: AppAnimations.normal,
-      vsync: this,
-    );
-    _animationController.forward();
-  }
-
-  @override
   void dispose() {
-    _animationController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  void _detectOperator() {
-    final phone = _phoneController.text;
-    if (phone.isEmpty) return;
-
-    Operator? detected;
-    if (phone.startsWith('0811') ||
-        phone.startsWith('0812') ||
-        phone.startsWith('0813') ||
-        phone.startsWith('0821') ||
-        phone.startsWith('0822') ||
-        phone.startsWith('0823')) {
-      detected = Operator.telkomsel;
-    } else if (phone.startsWith('0817') ||
-        phone.startsWith('0818') ||
-        phone.startsWith('0819') ||
-        phone.startsWith('0859') ||
-        phone.startsWith('0877') ||
-        phone.startsWith('0878')) {
-      detected = Operator.xl;
-    } else if (phone.startsWith('0814') ||
-        phone.startsWith('0815') ||
-        phone.startsWith('0816') ||
-        phone.startsWith('0855') ||
-        phone.startsWith('0856') ||
-        phone.startsWith('0857')) {
-      detected = Operator.indosat;
-    } else if (phone.startsWith('0892') ||
-        phone.startsWith('0893') ||
-        phone.startsWith('0899')) {
-      detected = Operator.tri;
-    } else if (phone.startsWith('0881') ||
-        phone.startsWith('0882') ||
-        phone.startsWith('0883') ||
-        phone.startsWith('0888') ||
-        phone.startsWith('0889')) {
-      detected = Operator.smartfren;
+  List<DataPackage> get _visiblePackages {
+    final items = List<DataPackage>.from(_packages[_category] ?? []);
+    if (_sort == 'termurah') {
+      items.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sort == 'terbesar') {
+      items.sort((a, b) => b.price.compareTo(a.price));
+    } else if (_sort == 'promo') {
+      items.sort((a, b) => (b.discount).compareTo(a.discount));
     }
+    return items;
+  }
 
-    if (detected != null) {
-      setState(() {
-        _selectedOperator = detected;
-      });
-    }
+  void _detect() => setState(() => _operator = detectOperator(_phoneController.text));
+
+  void _addToCart() {
+    if (_selected == null || _operator == null) return;
+    CartRepository.addItem(
+      CartItem(
+        id: 'cart-data-${DateTime.now().millisecondsSinceEpoch}',
+        type: TransactionType.data,
+        product: _selected!,
+        displayName: _selected!.name,
+        targetNumber: _phoneController.text,
+        operator: _operator,
+        price: _selected!.price,
+        addedAt: DateTime.now(),
+      ),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Paket data ditambahkan ke keranjang')),
+    );
+    setState(() {});
+  }
+
+  void _buyNow() {
+    if (_selected == null || _operator == null) return;
+    Navigator.pushNamed(
+      context,
+      '/checkout',
+      arguments: {
+        'product': _selected,
+        'operator': _operator,
+        'phone': _phoneController.text,
+        'type': 'data',
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final ready = _operator != null && _selected != null;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Beli Paket Data'),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+      appBar: AppBar(title: const Text('Beli Paket Data')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 140),
+        children: [
+          PremiumCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Phone input
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(-0.3, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: const Interval(0, 0.4),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Nomor Tujuan',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        onChanged: (_) {
-                          _detectOperator();
-                        },
-                        decoration: InputDecoration(
-                          hintText: '08123456789',
-                          prefixIcon: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: Icon(
-                              Iconsax.mobile,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Nomor tujuan',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  onChanged: (_) => _detect(),
+                  decoration: const InputDecoration(
+                    hintText: '0812xxxxxxx',
+                    prefixIcon: Icon(Iconsax.mobile),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                // Operator card
-                if (_selectedOperator != null)
-                  FadeTransition(
-                    opacity: Tween<double>(begin: 0, end: 1).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: const Interval(0.2, 0.6),
-                      ),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLow,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
+                const SizedBox(height: 12),
+                if (_operator != null)
+                  PremiumCard(
+                    backgroundColor: getOperatorColor(_operator!).withAlphaValue(0.08),
+                    child: Row(
+                      children: [
+                        Icon(Iconsax.wifi, color: getOperatorColor(_operator!)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Operator terdeteksi: ${getOperatorName(_operator!)}',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Iconsax.mobile,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Operator Terdeteksi',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _getOperatorName(_selectedOperator!),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Iconsax.tick_circle,
-                            color: AppColors.successGreen,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (_selectedOperator != null) const SizedBox(height: AppSpacing.lg),
-                // Category tabs
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Kategori Paket',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          'internet',
-                          'combo',
-                          'malam',
-                          'streaming',
-                        ].map((category) {
-                          final isSelected = _selectedCategory == category;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: AppSpacing.md),
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedCategory = category;
-                                  _selectedPackage = null;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg,
-                                  vertical: AppSpacing.sm,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.surfaceLow,
-                                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.border,
-                                  ),
-                                ),
-                                child: Text(
-                                  _getCategoryLabel(category),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : AppColors.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                // Package list
-                ..._packages[_selectedCategory]!.map((package) {
-                  final isSelected = _selectedPackage?.id == package.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedPackage = package;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withOpacity(0.05) : AppColors.surfaceCard,
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.border,
-                            width: isSelected ? 2 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color:
-                                        AppColors.primary.withOpacity(0.15),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        package.name,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${package.quota} • ${package.validityDays}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: AppColors.textSecondary,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (package.isPromo)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          AppColors.accentOrangeBright
-                                              .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(
-                                          AppRadius.sm),
-                                    ),
-                                    child: Text(
-                                      '-${package.discount}%',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(
-                                            color: AppColors
-                                                .accentOrangeBright,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Rp${package.price.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                ),
-                                if (isSelected)
-                                  Icon(
-                                    Iconsax.tick_square,
-                                    color: AppColors.successGreen,
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-                const SizedBox(height: AppSpacing.lg),
-                // CTA Button
-                if (_selectedPackage != null && _selectedOperator != null)
-                  SizedBox(
-                    width: double.infinity,
-                    child: PremiumButton(
-                      label: 'Lanjutkan ke Pembayaran',
-                      icon: Iconsax.arrow_right_3,
-                      onPressed: () {
-                        Navigator.of(context).pushNamed(
-                          '/checkout',
-                          arguments: {
-                            'product': _selectedPackage,
-                            'operator': _selectedOperator,
-                            'phone': _phoneController.text,
-                            'type': 'data',
-                          },
-                        );
-                      },
+                      ],
                     ),
                   ),
               ],
             ),
           ),
+          const SizedBox(height: 18),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const ('internet', 'Internet'),
+                const ('combo', 'Combo'),
+                const ('malam', 'Malam'),
+                const ('streaming', 'Streaming'),
+                const ('gaming', 'Gaming'),
+                const ('masa', 'Masa aktif'),
+              ].map((entry) {
+                final selected = _category == entry.$1;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: ChoiceChip(
+                    label: Text(entry.$2),
+                    selected: selected,
+                    onSelected: (_) => setState(() {
+                      _category = entry.$1;
+                      _selected = null;
+                    }),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['termurah', 'populer', 'terbesar', 'promo'].map((sort) {
+                final selected = _sort == sort;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: FilterChip(
+                    label: Text(sort[0].toUpperCase() + sort.substring(1)),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _sort = sort),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ..._visiblePackages.map((item) {
+            final selected = _selected?.id == item.id;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: GestureDetector(
+                onTap: _operator == null ? null : () => setState(() => _selected = item),
+                child: PremiumCard(
+                  backgroundColor: selected ? AppColors.primary.withAlphaValue(0.06) : AppColors.surfaceCard,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          if (item.isPromo)
+                            StatusChip(
+                              label: 'Promo',
+                              backgroundColor: AppColors.accentOrangeBright,
+                              textColor: AppColors.accentOrangeBright,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${item.quota} • ${item.validityDays}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: item.benefits.map((benefit) => _BenefitPill(label: benefit)).toList(),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Text(
+                            formatCurrency(item.originalPrice),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            formatCurrency(item.price),
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                          ),
+                          const Spacer(),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.primary : Colors.transparent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: selected ? AppColors.primary : AppColors.border,
+                                width: 2,
+                              ),
+                            ),
+                            child: selected
+                                ? const Icon(Icons.check, size: 13, color: Colors.white)
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: ready ? _addToCart : null,
+                  child: const Text('Masukkan ke Keranjang'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: PremiumButton(
+                  label: 'Beli Sekarang',
+                  onPressed: ready ? _buyNow : null,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  String _getOperatorName(Operator operator) {
-    switch (operator) {
-      case Operator.telkomsel:
-        return 'Telkomsel';
-      case Operator.xl:
-        return 'XL Axiata';
-      case Operator.indosat:
-        return 'Indosat';
-      case Operator.tri:
-        return 'Tri (3)';
-      case Operator.smartfren:
-        return 'Smartfren';
-    }
-  }
+class _BenefitPill extends StatelessWidget {
+  const _BenefitPill({required this.label});
 
-  String _getCategoryLabel(String category) {
-    switch (category) {
-      case 'internet':
-        return 'Internet';
-      case 'combo':
-        return 'Paket Combo';
-      case 'malam':
-        return 'Internet Malam';
-      case 'streaming':
-        return 'Streaming';
-      default:
-        return category;
-    }
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLow,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+    );
   }
 }

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '../config/theme.dart';
 import '../config/constants.dart';
+import '../services/app_state.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({Key? key}) : super(key: key);
+  const OnboardingScreen({super.key});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -56,6 +57,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   void _goToNextPage() {
+    AppState.completeOnboarding();
     if (_currentPage < items.length - 1) {
       _pageController.nextPage(
         duration: AppAnimations.normal,
@@ -67,6 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   void _skipOnboarding() {
+    AppState.completeOnboarding();
     Navigator.of(context).pushReplacementNamed('/login');
   }
 
@@ -76,6 +79,44 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
+          Positioned(
+            left: -120,
+            top: -100,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withAlphaValue(0.14),
+                    AppColors.primaryGradient.withAlphaValue(0.08),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -100,
+            bottom: -120,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.accentOrange.withAlphaValue(0.12),
+                    AppColors.accentOrangeBright.withAlphaValue(0.06),
+                  ],
+                ),
+              ),
+            ),
+          ),
           // Page view
           PageView.builder(
             controller: _pageController,
@@ -123,24 +164,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       items.length,
-                      (index) => AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          final isActive = index == _currentPage;
-                          return Container(
-                            margin:
-                                const EdgeInsets.symmetric(horizontal: 6),
-                            width: isActive ? 32 : 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              color: isActive
-                                  ? items[_currentPage].gradient.first
-                                  : AppColors.border,
-                            ),
-                          );
-                        },
-                      ),
+                      (index) {
+                        final isActive = index == _currentPage;
+                        return AnimatedContainer(
+                          duration: AppAnimations.fast,
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          width: isActive ? 32 : 10,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: isActive
+                                ? items[_currentPage].gradient.first
+                                : AppColors.border,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -198,10 +236,10 @@ class OnboardingPage extends StatelessWidget {
   final AnimationController animationController;
 
   const OnboardingPage({
-    Key? key,
+    super.key,
     required this.item,
     required this.animationController,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +277,7 @@ class OnboardingPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50),
                       boxShadow: [
                         BoxShadow(
-                          color: item.gradient.first.withOpacity(0.3),
+                          color: item.gradient.first.withAlphaValue(0.3),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                         ),

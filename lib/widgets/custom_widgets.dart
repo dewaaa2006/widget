@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:iconsax/iconsax.dart';
 import '../config/theme.dart';
 import '../config/constants.dart';
+import '../config/app_helpers.dart';
+import '../models/models.dart';
 
 // Premium Hero Balance Card
 class HeroBalanceCard extends StatefulWidget {
@@ -9,11 +12,11 @@ class HeroBalanceCard extends StatefulWidget {
   final VoidCallback onTap;
 
   const HeroBalanceCard({
-    Key? key,
+    super.key,
     required this.balance,
     required this.userName,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<HeroBalanceCard> createState() => _HeroBalanceCardState();
@@ -57,7 +60,7 @@ class _HeroBalanceCardState extends State<HeroBalanceCard>
           borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withAlphaValue(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -80,7 +83,7 @@ class _HeroBalanceCardState extends State<HeroBalanceCard>
                   height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withAlphaValue(0.08),
                   ),
                 ),
               ),
@@ -99,7 +102,7 @@ class _HeroBalanceCardState extends State<HeroBalanceCard>
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.06),
+                    color: Colors.white.withAlphaValue(0.06),
                   ),
                 ),
               ),
@@ -131,10 +134,10 @@ class _HeroBalanceCardState extends State<HeroBalanceCard>
                           vertical: AppSpacing.xs,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withAlphaValue(0.2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.white.withAlphaValue(0.3),
                             width: 1,
                           ),
                         ),
@@ -186,7 +189,7 @@ class _HeroBalanceCardState extends State<HeroBalanceCard>
                             .textTheme
                             .bodySmall
                             ?.copyWith(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withAlphaValue(0.7),
                               letterSpacing: 2,
                             ),
                       ),
@@ -196,7 +199,7 @@ class _HeroBalanceCardState extends State<HeroBalanceCard>
                             .textTheme
                             .bodySmall
                             ?.copyWith(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withAlphaValue(0.7),
                             ),
                       ),
                     ],
@@ -220,13 +223,13 @@ class QuickActionButton extends StatefulWidget {
   final Color? iconColor;
 
   const QuickActionButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.icon,
     required this.onTap,
     this.backgroundColor,
     this.iconColor,
-  }) : super(key: key);
+  });
 
   @override
   State<QuickActionButton> createState() => _QuickActionButtonState();
@@ -285,7 +288,7 @@ class _QuickActionButtonState extends State<QuickActionButton>
                 boxShadow: [
                   BoxShadow(
                     color: (widget.backgroundColor ?? AppColors.surfaceLow)
-                        .withOpacity(0.3),
+                        .withAlphaValue(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -322,14 +325,14 @@ class PremiumCard extends StatelessWidget {
   final BorderRadiusGeometry? borderRadius;
 
   const PremiumCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.elevation = 0,
     this.onTap,
     this.backgroundColor,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -340,7 +343,7 @@ class PremiumCard extends StatelessWidget {
         boxShadow: elevation > 0
             ? [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withAlphaValue(0.06),
                   blurRadius: elevation * 2,
                   offset: Offset(0, elevation),
                 ),
@@ -370,12 +373,12 @@ class StatusChip extends StatelessWidget {
   final IconData? icon;
 
   const StatusChip({
-    Key? key,
+    super.key,
     required this.label,
     required this.backgroundColor,
     required this.textColor,
     this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -385,10 +388,10 @@ class StatusChip extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: backgroundColor.withOpacity(0.1),
+        color: backgroundColor.withAlphaValue(0.1),
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: backgroundColor.withOpacity(0.3),
+          color: backgroundColor.withAlphaValue(0.3),
           width: 1,
         ),
       ),
@@ -415,7 +418,7 @@ class StatusChip extends StatelessWidget {
 // Premium Button with Shadow & Animation
 class PremiumButton extends StatefulWidget {
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final Color? backgroundColor;
   final Color? foregroundColor;
@@ -424,7 +427,7 @@ class PremiumButton extends StatefulWidget {
   final IconData? icon;
 
   const PremiumButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
@@ -433,7 +436,7 @@ class PremiumButton extends StatefulWidget {
     this.width = double.infinity,
     this.height,
     this.icon,
-  }) : super(key: key);
+  });
 
   @override
   State<PremiumButton> createState() => _PremiumButtonState();
@@ -464,7 +467,7 @@ class _PremiumButtonState extends State<PremiumButton>
 
   void _handleTapUp(TapUpDetails details) {
     _controller.reverse();
-    widget.onPressed();
+    widget.onPressed?.call();
   }
 
   void _handleTapCancel() {
@@ -473,14 +476,15 @@ class _PremiumButtonState extends State<PremiumButton>
 
   @override
   Widget build(BuildContext context) {
+    final isEnabled = widget.onPressed != null && !widget.isLoading;
     return ScaleTransition(
       scale: Tween<double>(begin: 1.0, end: 0.98).animate(
         CurvedAnimation(parent: _controller, curve: Curves.easeOut),
       ),
       child: GestureDetector(
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
+        onTapDown: isEnabled ? _handleTapDown : null,
+        onTapUp: isEnabled ? _handleTapUp : null,
+        onTapCancel: isEnabled ? _handleTapCancel : null,
         child: Container(
           width: widget.width,
           height: widget.height ?? 56,
@@ -489,15 +493,17 @@ class _PremiumButtonState extends State<PremiumButton>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                widget.backgroundColor ?? AppColors.primary,
-                (widget.backgroundColor ?? AppColors.primary).withOpacity(0.8),
+                (widget.backgroundColor ?? AppColors.primary)
+                    .withAlphaValue(isEnabled ? 1 : 0.45),
+                (widget.backgroundColor ?? AppColors.primary)
+                    .withAlphaValue(isEnabled ? 0.8 : 0.3),
               ],
             ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             boxShadow: [
               BoxShadow(
                 color: (widget.backgroundColor ?? AppColors.primary)
-                    .withOpacity(0.4),
+                    .withAlphaValue(isEnabled ? 0.4 : 0.12),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -555,11 +561,11 @@ class ShimmerSkeleton extends StatefulWidget {
   final double borderRadius;
 
   const ShimmerSkeleton({
-    Key? key,
+    super.key,
     this.width = double.infinity,
     this.height = 16,
     this.borderRadius = 8,
-  }) : super(key: key);
+  });
 
   @override
   State<ShimmerSkeleton> createState() => _ShimmerSkeletonState();
@@ -599,7 +605,7 @@ class _ShimmerSkeletonState extends State<ShimmerSkeleton>
               end: Alignment.centerRight,
               colors: [
                 AppColors.surfaceLow,
-                AppColors.surfaceHigh.withOpacity(0.5),
+                AppColors.surfaceHigh.withAlphaValue(0.5),
                 AppColors.surfaceLow,
               ],
               stops: [
@@ -626,7 +632,7 @@ class GlassContainer extends StatelessWidget {
   final BorderRadiusGeometry borderRadius;
 
   const GlassContainer({
-    Key? key,
+    super.key,
     required this.child,
     this.sigmaX = 10,
     this.sigmaY = 10,
@@ -634,21 +640,198 @@ class GlassContainer extends StatelessWidget {
     this.backgroundColor = Colors.white,
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.borderRadius = const BorderRadius.all(Radius.circular(AppRadius.lg)),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: backgroundColor.withOpacity(opacity),
+        color: backgroundColor.withAlphaValue(opacity),
         borderRadius: borderRadius,
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withAlphaValue(0.2),
           width: 1.5,
         ),
       ),
       child: child,
+    );
+  }
+}
+
+class UltraBottomNavBar extends StatelessWidget {
+  const UltraBottomNavBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = const [
+      (Iconsax.home_1, 'Beranda'),
+      (Iconsax.discount_circle, 'Promo'),
+      (Iconsax.receipt_item, 'Riwayat'),
+      (Iconsax.shopping_cart, 'Keranjang'),
+      (Iconsax.user, 'Profil'),
+    ];
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: GlassContainer(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          opacity: 0.92,
+          borderRadius: BorderRadius.circular(28),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isActive = index == currentIndex;
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => onTap(index),
+                  child: AnimatedContainer(
+                    duration: AppAnimations.normal,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppColors.primary.withAlphaValue(0.12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.$1,
+                          color: isActive
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                          size: 22,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.$2,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: isActive
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                                fontWeight: isActive
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class TransactionListTile extends StatelessWidget {
+  const TransactionListTile({
+    super.key,
+    required this.transaction,
+    this.onTap,
+    this.trailing,
+  });
+
+  final Transaction transaction;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  IconData _iconForType(TransactionType type) {
+    switch (type) {
+      case TransactionType.pulsa:
+        return Iconsax.mobile;
+      case TransactionType.data:
+        return Iconsax.wifi;
+      case TransactionType.topup:
+        return Iconsax.wallet_2;
+      case TransactionType.electric:
+        return Iconsax.flash_1;
+      case TransactionType.voucher:
+        return Iconsax.card;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = getStatusColor(transaction.status);
+    return PremiumCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: statusColor.withAlphaValue(0.1),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Icon(_iconForType(transaction.type), color: statusColor),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${transaction.description} • ${transaction.targetNumber}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    StatusChip(
+                      label: transaction.statusLabel,
+                      backgroundColor: statusColor,
+                      textColor: statusColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatCompactDate(transaction.createdAt),
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          trailing ??
+              Text(
+                formatCurrency(transaction.totalPrice),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+        ],
+      ),
     );
   }
 }

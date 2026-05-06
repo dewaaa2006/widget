@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '../config/theme.dart';
 import '../config/constants.dart';
+import '../services/app_state.dart';
 import '../widgets/custom_widgets.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -206,8 +207,17 @@ class _LoginPageState extends State<LoginPage>
                     child: PremiumButton(
                       label: 'Masuk',
                       onPressed: () {
-                        Navigator.of(context)
-                            .pushReplacementNamed('/home');
+                        if (_phoneController.text.trim().isEmpty ||
+                            _passwordController.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Lengkapi nomor telepon dan kata sandi'),
+                            ),
+                          );
+                          return;
+                        }
+                        AppState.login();
+                        Navigator.of(context).pushReplacementNamed('/home');
                       },
                     ),
                   ),
@@ -222,18 +232,24 @@ class _LoginPageState extends State<LoginPage>
                     ),
                   ),
                   child: Center(
-                    child: RichText(
-                      text: TextSpan(
-                        text: 'Belum punya akun? ',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                        children: [
-                          TextSpan(
-                            text: 'Daftar',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Belum punya akun? ',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pushNamed('/register');
+                          },
+                          child: Text(
+                            'Daftar',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -241,10 +257,9 @@ class _LoginPageState extends State<LoginPage>
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w700,
                                 ),
-                            recognizer: null,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -258,7 +273,7 @@ class _LoginPageState extends State<LoginPage>
 }
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -464,17 +479,18 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: PremiumButton(
                     label: 'Daftar',
                     onPressed: () {
-                      if (_agreeTerms) {
-                        Navigator.of(context)
-                            .pushReplacementNamed('/home');
-                      } else {
+                      if (!_agreeTerms) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
-                                'Mohon setujui syarat dan ketentuan'),
+                            content: Text('Mohon setujui syarat dan ketentuan'),
                           ),
                         );
+                        return;
                       }
+                      Navigator.of(context).pushReplacementNamed(
+                        '/otp',
+                        arguments: _phoneController.text.trim(),
+                      );
                     },
                   ),
                 ),
