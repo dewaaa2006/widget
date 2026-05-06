@@ -9,13 +9,13 @@ import '../widgets/custom_widgets.dart';
 class SuccessScreen extends StatefulWidget {
   const SuccessScreen({
     super.key,
-    this.type = 'cart',
-    this.amount = 0,
+    this.type,
+    this.amount,
     this.transactions,
   });
 
-  final String type;
-  final int amount;
+  final String? type;
+  final int? amount;
   final List<Transaction>? transactions;
 
   @override
@@ -130,7 +130,7 @@ class _SuccessScreenState extends State<SuccessScreen>
               PremiumCard(
                 child: Column(
                   children: [
-                    _ResultStat(label: 'Total pembayaran', value: formatCurrency(widget.amount)),
+                    _ResultStat(label: 'Total pembayaran', value: formatCurrency(widget.amount ?? 0)),
                     _ResultStat(label: 'Berhasil', value: '$_successCount item'),
                     _ResultStat(label: 'Pending', value: '$_pendingCount item'),
                     _ResultStat(label: 'Gagal', value: '$_failedCount item'),

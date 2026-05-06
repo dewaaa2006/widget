@@ -81,8 +81,8 @@ class MyApp extends StatelessWidget {
               builder: (context) => CheckoutScreen(
                 product: extra?['product'],
                 operator: extra?['operator'],
-                phone: extra?['phone'],
-                type: extra?['type'],
+                phone: (extra?['phone'] as String?) ?? '',
+                type: (extra?['type'] as String?) ?? '',
               ),
               settings: settings,
             );
@@ -90,9 +90,9 @@ class MyApp extends StatelessWidget {
             final extra = settings.arguments as Map<String, dynamic>?;
             return MaterialPageRoute(
               builder: (context) => SuccessScreen(
-                type: extra?['type'],
-                amount: extra?['amount'],
-                transactions: extra?['transactions'],
+                type: (extra?['type'] as String?) ?? 'cart',
+                amount: (extra?['amount'] as int?) ?? 0,
+                transactions: extra?['transactions'] as List<Transaction>?,
               ),
               settings: settings,
             );

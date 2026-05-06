@@ -14,6 +14,101 @@ class PaymentMethodsScreen extends StatefulWidget {
 class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   String _selectedId = PaymentMethodRepository.methods.first.id;
 
+  Future<void> _addMethod() async {
+    final created = await showModalBottomSheet<PaymentMethod>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final nameController = TextEditingController();
+        final digitController = TextEditingController();
+        PaymentMethodType selectedType = PaymentMethodType.virtualAccount;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: const BoxDecoration(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tambah metode pembayaran',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(hintText: 'Contoh: BNI Virtual Account'),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: digitController,
+                    decoration: const InputDecoration(hintText: '4 digit terakhir'),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  DropdownButtonFormField<PaymentMethodType>(
+                    initialValue: selectedType,
+                    items: const [
+                      DropdownMenuItem(value: PaymentMethodType.virtualAccount, child: Text('Virtual Account')),
+                      DropdownMenuItem(value: PaymentMethodType.eWallet, child: Text('E-Wallet')),
+                      DropdownMenuItem(value: PaymentMethodType.qris, child: Text('QRIS')),
+                    ],
+                    onChanged: (value) {
+                      setSheetState(() {
+                        selectedType = value ?? PaymentMethodType.virtualAccount;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PremiumButton(
+                    label: 'Simpan Metode',
+                    onPressed: () {
+                      if (nameController.text.trim().isEmpty) return;
+                      Navigator.pop(
+                        context,
+                        PaymentMethod(
+                          id: 'PM${DateTime.now().millisecondsSinceEpoch}',
+                          type: selectedType,
+                          displayName: nameController.text.trim(),
+                          subtitle: digitController.text.trim().isEmpty
+                              ? 'Baru ditambahkan'
+                              : '•••• ${digitController.text.trim()}',
+                          icon: selectedType == PaymentMethodType.eWallet
+                              ? Iconsax.wallet
+                              : selectedType == PaymentMethodType.qris
+                                  ? Iconsax.scan_barcode
+                                  : Iconsax.bank,
+                          lastDigits: digitController.text.trim(),
+                          isDefault: false,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (created != null) {
+      if (!mounted) return;
+      setState(() {
+        PaymentMethodRepository.addMethod(created);
+        _selectedId = created.id;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${created.displayName} berhasil ditambahkan')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,11 +190,7 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                 width: double.infinity,
                 child: PremiumButton(
                   label: 'Tambah Metode Baru',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tambah metode segera hadir')),
-                    );
-                  },
+                  onPressed: _addMethod,
                 ),
               ),
             ],

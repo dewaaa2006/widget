@@ -12,14 +12,14 @@ class CheckoutScreen extends StatefulWidget {
     super.key,
     this.product,
     this.operator,
-    this.phone = '',
-    this.type = '',
+    this.phone,
+    this.type,
   });
 
   final dynamic product;
   final Operator? operator;
-  final String phone;
-  final String type;
+  final String? phone;
+  final String? type;
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -53,29 +53,39 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     return args is Map<String, dynamic> && args['fromCart'] == true;
   }
 
+  Map<String, dynamic>? get _routeArgs {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    return args is Map<String, dynamic> ? args : null;
+  }
+
   List<CartItem> get _items {
     if (_fromCart) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
-      final selectedIds = List<String>.from(args['selectedItems'] as List<dynamic>);
+      final selectedIds = List<String>.from(
+        (_routeArgs?['selectedItems'] as List<dynamic>? ?? const []),
+      );
       return CartRepository.items.where((item) => selectedIds.contains(item.id)).toList();
     }
 
     return [
       CartItem(
         id: 'single-${DateTime.now().millisecondsSinceEpoch}',
-        type: _resolveType(widget.type),
+        type: _resolveType(widget.type ?? ''),
         product: widget.product,
-        displayName: _resolveDisplayName(widget.type, widget.product),
-        targetNumber: widget.phone,
+        displayName: _resolveDisplayName(widget.type ?? '', widget.product),
+        targetNumber: widget.phone ?? '',
         operator: widget.operator,
-        price: _resolvePrice(widget.type, widget.product),
+        price: _resolvePrice(widget.type ?? '', widget.product),
         addedAt: DateTime.now(),
       ),
     ];
   }
 
   int get _subtotal => _items.fold(0, (sum, item) => sum + item.price);
-  int get _discount => _globalVoucher == null ? 0 : (_subtotal >= 50000 ? 5000 : 0);
+  int get _discount {
+    final routeVoucher = _routeArgs?['voucher'] as String?;
+    final activeVoucher = _globalVoucher ?? routeVoucher;
+    return activeVoucher == null ? 0 : (_subtotal >= 50000 ? 5000 : 0);
+  }
   int get _cashback => _subtotal >= 100000 ? 10000 : 0;
   int get _adminFee => _selectedMethod.type == PaymentMethodType.saldo ? 0 : 2500;
   int get _serviceFee => _items.length > 1 ? 1500 : 0;
@@ -86,7 +96,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       AppState.currentUser.balance < _grandTotal;
 
   Future<void> _confirmPayment() async {
-    if (!_agree || _processing) return;
+    if (!_agree || _processing || _items.isEmpty) return;
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -143,7 +153,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       context,
       '/success',
       arguments: {
-        'type': widget.type.isEmpty ? 'cart' : widget.type,
+        'type': (widget.type == null || widget.type!.isEmpty) ? 'cart' : widget.type,
         'amount': _grandTotal,
         'transactions': transactions,
       },
@@ -174,7 +184,40 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       body: SafeArea(
         child: FadeTransition(
           opacity: _controller,
-          child: ListView(
+          child: _items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Iconsax.shopping_cart, size: 56, color: AppColors.textSecondary),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Tidak ada item untuk checkout',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Kembali ke keranjang dan pilih item yang ingin dibayar.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: 220,
+                          child: PremiumButton(
+                            label: 'Kembali ke Keranjang',
+                            onPressed: () => Navigator.pushReplacementNamed(context, '/cart'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 130),
             children: [
               _StepperCard(),
@@ -260,7 +303,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _globalVoucher ?? 'Tambahkan voucher global',
+                                    _globalVoucher ??
+                                        (_routeArgs?['voucher'] as String? ??
+                                            'Tambahkan voucher global'),
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleSmall
@@ -268,7 +313,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    _globalVoucher == null
+                                    (_globalVoucher ?? _routeArgs?['voucher']) == null
                                         ? 'Pakai kode promo, cashback, atau voucher item.'
                                         : 'Diskon aktif untuk checkout ini.',
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -277,7 +322,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                               ),
                             ),
                             Icon(
-                              _globalVoucher == null ? Iconsax.add : Iconsax.tick_circle,
+                              (_globalVoucher ?? _routeArgs?['voucher']) == null
+                                  ? Iconsax.add
+                                  : Iconsax.tick_circle,
                               color: AppColors.primary,
                             ),
                           ],

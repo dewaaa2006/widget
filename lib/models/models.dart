@@ -370,6 +370,13 @@ class VoucherRepository {
       isUsed: false,
     ),
   ];
+
+  static void addVoucher(Voucher voucher) {
+    final exists = vouchers.any((item) => item.code == voucher.code);
+    if (!exists) {
+      vouchers.insert(0, voucher);
+    }
+  }
 }
 
 class NotificationItem {
@@ -521,6 +528,10 @@ class PaymentMethodRepository {
       bankName: 'BCA',
     ),
   ];
+
+  static void addMethod(PaymentMethod method) {
+    methods.add(method);
+  }
 }
 
 // Cart Item Model

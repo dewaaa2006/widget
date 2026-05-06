@@ -1,14 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../config/theme.dart';
 import '../models/models.dart';
+import '../services/app_state.dart';
 import '../widgets/custom_widgets.dart';
 
-class PromoCenterScreen extends StatelessWidget {
+class PromoCenterScreen extends StatefulWidget {
   const PromoCenterScreen({super.key});
 
   @override
+  State<PromoCenterScreen> createState() => _PromoCenterScreenState();
+}
+
+class _PromoCenterScreenState extends State<PromoCenterScreen> {
+  String _selectedFilter = 'Semua';
+
+  List<Promo> get _promos {
+    return PromoRepository.promos.where((promo) {
+      if (_selectedFilter == 'Semua') return true;
+      if (_selectedFilter == 'Cashback') {
+        return promo.title.toLowerCase().contains('cashback');
+      }
+      if (_selectedFilter == 'Bebas Admin') {
+        return promo.title.toLowerCase().contains('admin');
+      }
+      return promo.description.toLowerCase().contains('top up') ||
+          promo.subtitle.toLowerCase().contains('top up');
+    }).toList();
+  }
+
+  void _claimPromo(Promo promo) {
+    if (AppState.isPromoClaimed(promo.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${promo.title} sudah pernah diklaim')),
+      );
+      return;
+    }
+
+    AppState.claimPromo(
+      promo.id,
+      voucherCode: promo.code,
+      title: promo.title,
+    );
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${promo.title} berhasil diklaim')),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final promos = _promos;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -32,15 +75,36 @@ class PromoCenterScreen extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: ['Semua', 'Cashback', 'Bebas Admin', 'Top Up']
+                    .map(
+                      (filter) => Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
+                        child: ChoiceChip(
+                          label: Text(filter),
+                          selected: _selectedFilter == filter,
+                          onSelected: (_) {
+                            setState(() => _selectedFilter = filter);
+                          },
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               height: 220,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: PromoRepository.promos.length,
+                itemCount: promos.length,
                 itemBuilder: (context, index) {
-                  final promo = PromoRepository.promos[index];
+                  final promo = promos[index];
+                  final claimed = AppState.isPromoClaimed(promo.id);
                   return Padding(
-                    padding: EdgeInsets.only(right: index == PromoRepository.promos.length - 1 ? 0 : AppSpacing.md),
+                    padding: EdgeInsets.only(right: index == promos.length - 1 ? 0 : AppSpacing.md),
                     child: Container(
                       width: 320,
                       decoration: BoxDecoration(
@@ -66,16 +130,18 @@ class PromoCenterScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                promo.title,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                    ),
+                              Expanded(
+                                child: Text(
+                                  promo.title,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
                               ),
-                              Icon(
+                              const Icon(
                                 Iconsax.ticket_discount,
-                                color: const Color.fromRGBO(255, 255, 255, 0.85),
+                                color: Color.fromRGBO(255, 255, 255, 0.85),
                                 size: 32,
                               ),
                             ],
@@ -89,24 +155,38 @@ class PromoCenterScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                promo.discountLabel,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    promo.discountLabel,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  if (promo.code != null)
+                                    Text(
+                                      promo.code!,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                            color: Colors.white70,
+                                          ),
                                     ),
+                                ],
                               ),
                               TextButton(
-                                onPressed: () {},
+                                onPressed: claimed ? null : () => _claimPromo(promo),
                                 style: TextButton.styleFrom(
-                                  backgroundColor: const Color.fromRGBO(255, 255, 255, 0.18),
+                                  backgroundColor: claimed
+                                      ? const Color.fromRGBO(255, 255, 255, 0.10)
+                                      : const Color.fromRGBO(255, 255, 255, 0.18),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(AppRadius.xl),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Klaim',
-                                  style: TextStyle(color: Colors.white),
+                                child: Text(
+                                  claimed ? 'Terklaim' : 'Klaim',
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                               ),
                             ],
@@ -125,7 +205,7 @@ class PromoCenterScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Column(
-              children: PromoRepository.promos
+              children: promos
                   .map(
                     (promo) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -136,7 +216,7 @@ class PromoCenterScreen extends StatelessWidget {
                             CircleAvatar(
                               radius: 24,
                               backgroundColor: AppColors.primary.withAlphaValue(0.12),
-                              child: Icon(
+                              child: const Icon(
                                 Iconsax.flash_1,
                                 color: AppColors.primary,
                               ),
@@ -161,15 +241,39 @@ class PromoCenterScreen extends StatelessWidget {
                                         .bodySmall
                                         ?.copyWith(color: AppColors.textSecondary),
                                   ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    promo.code == null ? 'Tanpa kode' : 'Kode: ${promo.code}',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
                                 ],
                               ),
                             ),
-                            Text(
-                              promo.discountLabel,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(color: AppColors.accentOrangeBright, fontWeight: FontWeight.w700),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  promo.discountLabel,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(color: AppColors.accentOrangeBright, fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                InkWell(
+                                  onTap: () => _claimPromo(promo),
+                                  child: Text(
+                                    AppState.isPromoClaimed(promo.id) ? 'Sudah diklaim' : 'Klaim sekarang',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -177,7 +281,26 @@ class PromoCenterScreen extends StatelessWidget {
                     ),
                   )
                   .toList(),
-            )
+            ),
+            PremiumCard(
+              backgroundColor: AppColors.surfaceLow,
+              child: Row(
+                children: [
+                  const Icon(Iconsax.ticket_discount, color: AppColors.primary),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      'Promo yang diklaim akan otomatis ditambahkan ke halaman voucher.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/voucher'),
+                    child: const Text('Lihat'),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

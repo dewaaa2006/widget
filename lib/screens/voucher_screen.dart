@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import '../config/theme.dart';
 import '../models/models.dart';
+import '../services/app_state.dart';
 import '../widgets/custom_widgets.dart';
 
 class VoucherScreen extends StatefulWidget {
@@ -16,11 +17,14 @@ class _VoucherScreenState extends State<VoucherScreen> {
   bool _applied = false;
 
   void _applyVoucher() {
-    if (_code.trim().toUpperCase() == 'ULTRA50') {
+    final normalized = _code.trim().toUpperCase();
+    final exists = VoucherRepository.vouchers.any((voucher) => voucher.code == normalized);
+    if (exists) {
       setState(() {
         _applied = true;
       });
-      _showToast('Voucher ULTRA50 berhasil diterapkan!');
+      AppState.claimedVoucherCodes.add(normalized);
+      _showToast('Voucher $normalized berhasil diterapkan!');
     } else {
       setState(() {
         _applied = false;
@@ -100,6 +104,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
               const SizedBox(height: AppSpacing.sm),
               Column(
                 children: VoucherRepository.vouchers.map((voucher) {
+                  final claimed = AppState.isVoucherClaimed(voucher.code);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: PremiumCard(
@@ -148,6 +153,18 @@ class _VoucherScreenState extends State<VoucherScreen> {
                                 .textTheme
                                 .labelMedium
                                 ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _code = voucher.code;
+                                _applied = true;
+                              });
+                              AppState.claimedVoucherCodes.add(voucher.code);
+                              _showToast('Voucher ${voucher.code} siap dipakai');
+                            },
+                            child: Text(claimed ? 'Dipakai' : 'Pakai'),
                           ),
                         ],
                       ),

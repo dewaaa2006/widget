@@ -20,23 +20,50 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _selectedIds.addAll(CartRepository.items.map((item) => item.id));
+    _selectedIds.addAll(
+      CartRepository.items
+          .where(_isSelectable)
+          .map((item) => item.id),
+    );
   }
 
+  Set<String> get _existingIds =>
+      CartRepository.items.map((item) => item.id).toSet();
+  Set<String> get _effectiveSelectedIds =>
+      _selectedIds.where((id) => _existingIds.contains(id)).toSet();
   List<CartItem> get _selectedItems => CartRepository.items
-      .where((item) => _selectedIds.contains(item.id))
+      .where((item) => _effectiveSelectedIds.contains(item.id))
       .toList();
+  bool get _hasUnavailableSelected =>
+      _selectedItems.any((item) => item.targetNumber.endsWith('999'));
+  bool get _hasAvailableItems =>
+      CartRepository.items.any(_isSelectable);
+  bool get _allSelectableSelected {
+    final selectableCount = CartRepository.items.where(_isSelectable).length;
+    return _hasAvailableItems && _effectiveSelectedIds.length == selectableCount;
+  }
 
   int get _subtotal => _selectedItems.fold(0, (sum, item) => sum + item.price);
   int get _discount => _voucherCode == null ? 0 : (_subtotal >= 50000 ? 2000 : 0);
   int get _adminFee => _selectedItems.isEmpty ? 0 : (_selectedItems.length * 1500);
   int get _total => _subtotal - _discount + _adminFee;
 
+  bool _isSelectable(CartItem item) => !item.targetNumber.endsWith('999');
+
   void _toggleItem(String id) {
+    CartItem? item;
+    for (final entry in CartRepository.items) {
+      if (entry.id == id) {
+        item = entry;
+        break;
+      }
+    }
+    if (item == null) return;
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
       } else {
+        if (!_isSelectable(item!)) return;
         _selectedIds.add(id);
       }
     });
@@ -44,12 +71,17 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
 
   void _toggleAll() {
     setState(() {
-      if (_selectedIds.length == CartRepository.items.length) {
+      final selectableIds = CartRepository.items
+          .where(_isSelectable)
+          .map((item) => item.id)
+          .toSet();
+      if (_selectedIds.containsAll(selectableIds) &&
+          selectableIds.containsAll(_selectedIds)) {
         _selectedIds.clear();
       } else {
         _selectedIds
           ..clear()
-          ..addAll(CartRepository.items.map((item) => item.id));
+          ..addAll(selectableIds);
       }
     });
   }
@@ -183,15 +215,23 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                           width: 180,
                           child: PremiumButton(
                             label: 'Lanjut Checkout',
-                            onPressed: _selectedItems.isEmpty
+                            onPressed: _selectedItems.isEmpty || !_hasAvailableItems
                                 ? null
                                 : () {
+                                    if (_hasUnavailableSelected) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Hapus atau batalkan item yang tidak tersedia sebelum checkout'),
+                                        ),
+                                      );
+                                      return;
+                                    }
                                     Navigator.pushNamed(
                                       context,
                                       '/checkout',
                                       arguments: {
                                         'fromCart': true,
-                                        'selectedItems': _selectedIds.toList(),
+                                        'selectedItems': _effectiveSelectedIds.toList(),
                                         'voucher': _voucherCode,
                                       },
                                     ).then((_) => setState(() {}));
@@ -267,11 +307,11 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                 child: Row(
                   children: [
                     _SelectCircle(
-                      selected: _selectedIds.length == CartRepository.items.length,
+                      selected: _allSelectableSelected,
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      _selectedIds.length == CartRepository.items.length
+                      _allSelectableSelected
                           ? 'Batalkan semua'
                           : 'Pilih semua',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -319,7 +359,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
             children: [
               ...CartRepository.items.map((item) {
                 final selected = _selectedIds.contains(item.id);
-                final unavailable = item.targetNumber.endsWith('999');
+                final unavailable = !_isSelectable(item);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 14),
                   child: Dismissible(
@@ -343,7 +383,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               GestureDetector(
-                                onTap: unavailable ? null : () => _toggleItem(item.id),
+                                onTap: () => _toggleItem(item.id),
                                 child: _SelectCircle(selected: selected),
                               ),
                               const SizedBox(width: 12),
