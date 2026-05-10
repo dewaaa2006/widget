@@ -96,6 +96,15 @@ class _TopUpScreenState extends State<TopUpScreen> {
             ),
           ),
           const SizedBox(height: 18),
+          const AnimatedPromoBanner(
+            title: 'Top Up Kilat, Cashback Lebih Besar',
+            subtitle: 'Isi saldo dalam hitungan detik dan buka promo bebas admin plus cashback eksklusif hari ini.',
+            badge: 'Ultra Flash',
+            cta: 'Pilih nominal dan aktifkan promo sekarang',
+            icon: Iconsax.wallet_add,
+            height: 182,
+          ),
+          const SizedBox(height: 18),
           Text(
             'Pilih nominal',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),

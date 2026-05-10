@@ -26,6 +26,7 @@ class AppState {
     loyaltyLevel: 4,
     createdAt: DateTime.now().subtract(const Duration(days: 520)),
   );
+  static Map<String, String>? pendingRegistration;
 
   static void completeOnboarding() {
     hasSeenOnboarding = true;
@@ -45,6 +46,50 @@ class AppState {
 
   static void updateBalance(double balance) {
     currentUser = currentUser.copyWith(balance: balance);
+  }
+
+  static void startRegistration({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) {
+    pendingRegistration = {
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'password': password,
+    };
+  }
+
+  static bool get hasPendingRegistration => pendingRegistration != null;
+
+  static void completePendingRegistration() {
+    final registration = pendingRegistration;
+    if (registration == null) return;
+    final name = registration['name'] ?? 'Pengguna Ultra.X';
+    final initials = _buildInitials(name);
+    currentUser = User(
+      id: 'user-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      email: registration['email'] ?? '',
+      phone: registration['phone'] ?? '',
+      avatar: initials,
+      balance: 0,
+      loyaltyLevel: 1,
+      createdAt: DateTime.now(),
+    );
+    pendingRegistration = null;
+    isLoggedIn = true;
+  }
+
+  static String _buildInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    if (parts.isEmpty) return 'UX';
+    if (parts.length == 1) {
+      return parts.first.substring(0, parts.first.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
   static bool isPromoClaimed(String promoId) {

@@ -181,6 +181,13 @@ class Transaction {
   final DateTime createdAt;
   final DateTime? completedAt;
   final String? referenceNumber;
+  final String? paymentReference;
+  final String? providerReference;
+  final DateTime? paymentExpiresAt;
+  final String? gatewayName;
+  final String? gatewayStatus;
+  final int? serviceFee;
+  final String? note;
 
   Transaction({
     required this.id,
@@ -198,6 +205,13 @@ class Transaction {
     required this.createdAt,
     this.completedAt,
     this.referenceNumber,
+    this.paymentReference,
+    this.providerReference,
+    this.paymentExpiresAt,
+    this.gatewayName,
+    this.gatewayStatus,
+    this.serviceFee,
+    this.note,
   });
 
   String get statusLabel {
@@ -526,6 +540,46 @@ class PaymentMethodRepository {
       lastDigits: '7890',
       isDefault: false,
       bankName: 'BCA',
+    ),
+    PaymentMethod(
+      id: 'PM4',
+      type: PaymentMethodType.virtualAccount,
+      displayName: 'Mandiri Virtual',
+      subtitle: 'VA 2241',
+      icon: Iconsax.bank,
+      lastDigits: '2241',
+      isDefault: false,
+      bankName: 'Mandiri',
+    ),
+    PaymentMethod(
+      id: 'PM5',
+      type: PaymentMethodType.qris,
+      displayName: 'QRIS',
+      subtitle: 'Scan semua e-wallet dan m-banking',
+      icon: Iconsax.scan_barcode,
+      lastDigits: 'QRIS',
+      isDefault: false,
+      bankName: 'QRIS',
+    ),
+    PaymentMethod(
+      id: 'PM6',
+      type: PaymentMethodType.eWallet,
+      displayName: 'DANA',
+      subtitle: 'Redirect payment sandbox',
+      icon: Iconsax.wallet_2,
+      lastDigits: '8891',
+      isDefault: false,
+      bankName: 'DANA',
+    ),
+    PaymentMethod(
+      id: 'PM7',
+      type: PaymentMethodType.eWallet,
+      displayName: 'OVO',
+      subtitle: 'Redirect payment sandbox',
+      icon: Iconsax.wallet_2,
+      lastDigits: '7721',
+      isDefault: false,
+      bankName: 'OVO',
     ),
   ];
 

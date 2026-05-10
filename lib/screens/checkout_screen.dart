@@ -5,6 +5,7 @@ import '../config/app_helpers.dart';
 import '../config/theme.dart';
 import '../models/models.dart';
 import '../services/app_state.dart';
+import '../services/payment_gateway_service.dart';
 import '../widgets/custom_widgets.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  final TextEditingController _noteController = TextEditingController();
   PaymentMethod _selectedMethod = PaymentMethodRepository.methods.first;
   bool _agree = true;
   bool _processing = false;
@@ -45,6 +47,7 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -111,69 +114,29 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     if (confirmed != true) return;
 
     setState(() => _processing = true);
-    await _showProcessingDialog();
     if (!mounted) return;
-
-    final transactions = <Transaction>[];
-    for (var index = 0; index < _items.length; index++) {
-      final item = _items[index];
-      final status = _statusForItem(index, _items.length);
-      final transaction = Transaction(
-        id: 'TRX${DateTime.now().millisecondsSinceEpoch}$index',
-        type: item.type,
-        title: getTransactionTypeLabel(item.type),
-        description: item.displayName,
-        targetNumber: item.targetNumber,
-        operatorName: item.operator == null ? null : getOperatorName(item.operator!),
-        amount: item.price,
-        totalPrice: item.price + (status == TransactionStatus.failed ? 0 : _adminFee),
-        adminFee: _adminFee,
-        discount: _discount > 0 ? (_discount / _items.length).round() : 0,
-        status: status,
-        paymentMethod: _selectedMethod.type,
-        createdAt: DateTime.now(),
-        completedAt: status == TransactionStatus.processing ? null : DateTime.now(),
-        referenceNumber: 'INV${DateTime.now().millisecondsSinceEpoch}',
-      );
-      TransactionRepository.add(transaction);
-      transactions.add(transaction);
-    }
-
-    if (_selectedMethod.type == PaymentMethodType.saldo && !_insufficientBalance) {
-      AppState.updateBalance(AppState.currentUser.balance - _grandTotal);
-    }
-    if (_fromCart) {
-      for (final item in _items) {
-        CartRepository.removeItem(item.id);
-      }
-    }
-
-    if (!mounted) return;
+    final intent = PaymentGatewayService.createIntent(
+      items: _items,
+      method: _selectedMethod,
+      subtotal: _subtotal,
+      discount: _discount,
+      adminFee: _adminFee,
+      serviceFee: _serviceFee,
+      totalAmount: _grandTotal,
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
+    );
+    setState(() => _processing = false);
     Navigator.pushReplacementNamed(
       context,
-      '/success',
+      '/payment-processing',
       arguments: {
-        'type': (widget.type == null || widget.type!.isEmpty) ? 'cart' : widget.type,
-        'amount': _grandTotal,
-        'transactions': transactions,
+        'intent': intent,
+        'items': _items,
+        'fromCart': _fromCart,
       },
     );
-  }
-
-  Future<void> _showProcessingDialog() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return _ProcessingDialog(onComplete: () async {
-          await Future<void>.delayed(const Duration(milliseconds: 3800));
-          if (dialogContext.mounted) Navigator.pop(dialogContext);
-        });
-      },
-    );
-    if (mounted) {
-      setState(() => _processing = false);
-    }
   }
 
   @override
@@ -449,9 +412,9 @@ class _CheckoutScreenState extends State<CheckoutScreen>
                     _SectionTitle(title: 'Catatan transaksi'),
                     const SizedBox(height: 12),
                     TextField(
+                      controller: _noteController,
                       minLines: 2,
                       maxLines: 4,
-                      onChanged: (_) {},
                       decoration: const InputDecoration(
                         hintText: 'Tambahkan catatan jika diperlukan',
                       ),
@@ -566,13 +529,6 @@ class _CheckoutScreenState extends State<CheckoutScreen>
     if (type == 'topup') return 'Top Up ${product.label as String}';
     if (type == 'electric') return product['name'] as String;
     return 'Transaksi Ultra.X';
-  }
-
-  TransactionStatus _statusForItem(int index, int totalItems) {
-    if (totalItems == 1) return TransactionStatus.success;
-    if (index == totalItems - 1) return TransactionStatus.pending;
-    if (index == totalItems - 2 && totalItems > 2) return TransactionStatus.failed;
-    return TransactionStatus.success;
   }
 }
 
@@ -776,110 +732,6 @@ class _ConfirmSheet extends StatelessWidget {
               label: 'Konfirmasi Bayar',
               onPressed: () => Navigator.pop(context, true),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProcessingDialog extends StatefulWidget {
-  const _ProcessingDialog({required this.onComplete});
-
-  final Future<void> Function() onComplete;
-
-  @override
-  State<_ProcessingDialog> createState() => _ProcessingDialogState();
-}
-
-class _ProcessingDialogState extends State<_ProcessingDialog> {
-  int _activeStep = 0;
-  final _steps = const [
-    'Memverifikasi pembayaran',
-    'Menghubungi provider',
-    'Memproses transaksi',
-    'Menyelesaikan pesanan',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _run();
-  }
-
-  Future<void> _run() async {
-    for (var i = 0; i < _steps.length; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 850));
-      if (!mounted) return;
-      setState(() => _activeStep = i);
-    }
-    await widget.onComplete();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.surfaceCard,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(
-              width: 54,
-              height: 54,
-              child: CircularProgressIndicator(strokeWidth: 4),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Jangan tutup aplikasi',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Kami sedang memastikan transaksi berjalan aman dan tuntas.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 18),
-            ...List.generate(_steps.length, (index) {
-              final active = index <= _activeStep;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: active ? AppColors.primary : AppColors.surfaceLow,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        active ? Icons.check : Iconsax.more_circle,
-                        size: 14,
-                        color: active ? Colors.white : AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _steps[index],
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: active
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
           ],
         ),
       ),

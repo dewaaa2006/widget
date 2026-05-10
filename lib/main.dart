@@ -9,6 +9,7 @@ import 'screens/pulsa_screen.dart';
 import 'screens/data_screen.dart';
 import 'screens/topup_screen.dart';
 import 'screens/checkout_screen.dart';
+import 'screens/payment_processing_screen.dart';
 import 'screens/transaction_history_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/success_detail_screen.dart';
@@ -27,6 +28,7 @@ import 'screens/edit_profile_screen.dart';
 import 'screens/security_settings_screen.dart';
 import 'screens/referral_screen.dart';
 import 'screens/pln_token_screen.dart';
+import 'models/payment_simulation.dart';
 
 void main() {
   runApp(const MyApp());
@@ -70,9 +72,16 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/otp':
-            final phone = settings.arguments as String?;
+            final extra = settings.arguments;
+            final data = extra is Map<String, dynamic> ? extra : null;
+            final phone = data?['phone'] as String? ??
+                (extra is String ? extra : null);
+            final sessionId = data?['sessionId'] as String?;
             return MaterialPageRoute(
-              builder: (context) => OTPPage(phone: phone ?? ''),
+              builder: (context) => OTPPage(
+                phone: phone ?? '',
+                sessionId: sessionId,
+              ),
               settings: settings,
             );
           case '/checkout':
@@ -93,6 +102,17 @@ class MyApp extends StatelessWidget {
                 type: (extra?['type'] as String?) ?? 'cart',
                 amount: (extra?['amount'] as int?) ?? 0,
                 transactions: extra?['transactions'] as List<Transaction>?,
+                paymentIntent: extra?['paymentIntent'] as PaymentIntent?,
+              ),
+              settings: settings,
+            );
+          case '/payment-processing':
+            final extra = settings.arguments as Map<String, dynamic>?;
+            return MaterialPageRoute(
+              builder: (context) => PaymentProcessingScreen(
+                intent: extra?['intent'] as PaymentIntent,
+                items: extra?['items'] as List<CartItem>? ?? const [],
+                fromCart: extra?['fromCart'] as bool? ?? false,
               ),
               settings: settings,
             );

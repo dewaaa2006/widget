@@ -383,8 +383,9 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minWidth: 0),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
+        horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
@@ -395,21 +396,27 @@ class StatusChip extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 14, color: textColor),
-            const SizedBox(width: AppSpacing.xs),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: textColor),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
           ],
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -655,6 +662,402 @@ class GlassContainer extends StatelessWidget {
         ),
       ),
       child: child,
+    );
+  }
+}
+
+class AnimatedPromoBanner extends StatefulWidget {
+  const AnimatedPromoBanner({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.badge,
+    this.cta,
+    this.icon = Iconsax.ticket_discount,
+    this.height = 168,
+  });
+
+  final String title;
+  final String subtitle;
+  final String badge;
+  final String? cta;
+  final IconData icon;
+  final double height;
+
+  @override
+  State<AnimatedPromoBanner> createState() => _AnimatedPromoBannerState();
+}
+
+class _AnimatedPromoBannerState extends State<AnimatedPromoBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final isNarrow = width < 348;
+            final isCompact = widget.height <= 160 || width < 360;
+            final horizontalPadding = isNarrow ? 18.0 : 22.0;
+            final verticalPadding = isNarrow ? 18.0 : 22.0;
+            final sidePanelWidth = isNarrow ? 74.0 : 92.0;
+            final iconSize = isNarrow ? 48.0 : 60.0;
+            final titleStyle = (isCompact
+                    ? Theme.of(context).textTheme.headlineSmall
+                    : Theme.of(context).textTheme.headlineMedium)
+                ?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  height: 1.02,
+                );
+            final subtitleStyle =
+                Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withAlphaValue(0.86),
+                      height: 1.35,
+                    );
+
+            return AnimatedSize(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              child: Container(
+                constraints: BoxConstraints(minHeight: widget.height),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryGradient],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.xxl),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withAlphaValue(0.18),
+                      blurRadius: 30,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: -38 + (_controller.value * 10),
+                      top: -42,
+                      child: Container(
+                        width: isNarrow ? 120 : 150,
+                        height: isNarrow ? 120 : 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withAlphaValue(0.10),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -18,
+                      bottom: -30 + (_controller.value * 8),
+                      child: Container(
+                        width: isNarrow ? 108 : 132,
+                        height: isNarrow ? 108 : 132,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withAlphaValue(0.08),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: -34,
+                      left: width * 0.34 + (_controller.value * 12),
+                      child: Transform.rotate(
+                        angle: -0.92,
+                        child: Container(
+                          width: isNarrow ? 92 : 118,
+                          height: isNarrow ? 190 : 240,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withAlphaValue(0.18),
+                                Colors.white.withAlphaValue(0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: horizontalPadding,
+                      right: horizontalPadding,
+                      top: 18,
+                      child: Container(
+                        height: 1,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withAlphaValue(0.36),
+                              Colors.white.withAlphaValue(0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: verticalPadding,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    GlassContainer(
+                                      opacity: 0.18,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.xs,
+                                      ),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.xl),
+                                      child: Text(
+                                        widget.badge,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.white.withAlphaValue(0.08),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: Colors.white
+                                              .withAlphaValue(0.10),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 7,
+                                            height: 7,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF9EE6FF),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Ultra Ads',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelSmall
+                                                ?.copyWith(
+                                                  color: Colors.white
+                                                      .withAlphaValue(0.90),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: isCompact ? 18 : 22),
+                                Text(
+                                  widget.title,
+                                  maxLines: isCompact ? 2 : 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: titleStyle,
+                                ),
+                                SizedBox(height: isCompact ? 8 : 10),
+                                Text(
+                                  widget.subtitle,
+                                  maxLines: isCompact ? 3 : 4,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: subtitleStyle,
+                                ),
+                                if (widget.cta != null) ...[
+                                  SizedBox(
+                                    height: isCompact ? 12 : 16,
+                                  ),
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: width - sidePanelWidth - 56,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.sm,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.white.withAlphaValue(0.14),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.xl),
+                                        border: Border.all(
+                                          color: Colors.white
+                                              .withAlphaValue(0.12),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              widget.cta!,
+                                              maxLines: isNarrow ? 2 : 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelLarge
+                                                  ?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: AppSpacing.sm),
+                                          Transform.translate(
+                                            offset: Offset(
+                                              _controller.value * 6,
+                                              0,
+                                            ),
+                                            child: const Icon(
+                                              Iconsax.arrow_right_3,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: isNarrow ? 12 : 18),
+                          SizedBox(
+                            width: sidePanelWidth,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Transform.translate(
+                                  offset: Offset(0, _controller.value * 8),
+                                  child: Transform.rotate(
+                                    angle: (_controller.value - 0.5) * 0.10,
+                                    child: Container(
+                                      width: iconSize,
+                                      height: iconSize,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.white.withAlphaValue(0.16),
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: Colors.white
+                                              .withAlphaValue(0.12),
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        widget.icon,
+                                        color: Colors.white,
+                                        size: isNarrow ? 22 : 28,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlphaValue(0.10),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color:
+                                          Colors.white.withAlphaValue(0.10),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Live',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: Colors.white
+                                                  .withAlphaValue(0.72),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '10%',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
